@@ -1,58 +1,84 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import React, { useState } from "react";
+import { 
+  View, Text, StyleSheet, TextInput, TouchableOpacity, 
+  Alert, KeyboardAvoidingView, Platform, ScrollView 
+} from "react-native";
+import * as Animatable from 'react-native-animatable';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../../App';
+import { RootStackParamList } from '../../routes'; // ajuste o caminho conforme sua estrutura
 
-type CreateMessageNavigationProp = NavigationProp<RootStackParamList, 'CreateMessage'>;
+type NavigationPropType = NavigationProp<RootStackParamList, 'CreateMessage'>;
 
 export default function CreateMessage() {
-  const navigation = useNavigation<CreateMessageNavigationProp>();
+  const navigation = useNavigation<NavigationPropType>();
   const [message, setMessage] = useState('');
 
-  function handleSave() {
+  const handleSave = () => {
     if (message.trim() === '') {
       Alert.alert('Erro', 'Por favor, digite uma mensagem.');
       return;
     }
 
-    // Aqui você pode salvar a mensagem (ex: API, AsyncStorage)
-    // Por enquanto, só mostramos um alerta e voltamos
-
-    Alert.alert('Sucesso', 'Mensagem cadastrada!', [
-      {
-        text: 'OK',
-        onPress: () => navigation.navigate('Welcome'), // Volta para a tela inicial
+    fetch('http://<SEU_IP_LOCAL>:8080/api/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
       },
-    ]);
-  }
+      body: JSON.stringify({
+        content: message,
+        senderId: 1,
+        recipientId: 2,
+        messageType: 'INFO',
+      }),
+    })
+      .then((response) => {
+        if (response.ok) {
+          Alert.alert('Sucesso', 'Mensagem cadastrada!', [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('Welcome'),
+            },
+          ]);
+        } else {
+          Alert.alert('Erro', 'Não foi possível cadastrar a mensagem.');
+        }
+      })
+      .catch((error) => {
+        console.error('Erro ao cadastrar mensagem:', error);
+        Alert.alert('Erro', 'Ocorreu um erro ao cadastrar a mensagem.');
+      });
+  };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
-      <View style={styles.form}>
-        <Text style={styles.label}>Digite sua mensagem:</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Escreva aqui..."
-          placeholderTextColor="#999"
-          multiline
-          value={message}
-          onChangeText={setMessage}
-        />
+      <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
+        <Animatable.View animation="fadeInUp" style={styles.containerForm}>
+          <Text style={styles.label}>Digite sua mensagem:</Text>
+          <TextInput
+            style={styles.input}
+            placeholder="Escreva aqui..."
+            placeholderTextColor="#ccc"
+            multiline
+            value={message}
+            onChangeText={setMessage}
+          />
 
-        <TouchableOpacity style={styles.button} onPress={handleSave}>
-          <Text style={styles.buttonText}>Salvar Mensagem</Text>
-        </TouchableOpacity>
+          <TouchableOpacity style={styles.buttonPrimary} onPress={handleSave}>
+            <Text style={styles.buttonPrimaryText}>Salvar Mensagem</Text>
+          </TouchableOpacity>
 
-        <TouchableOpacity
-          style={[styles.button, styles.buttonBack]}
-          onPress={() => navigation.navigate('Welcome')}
-        >
-          <Text style={[styles.buttonText, styles.buttonBackText]}>Voltar para Início</Text>
-        </TouchableOpacity>
-      </View>
+          <TouchableOpacity 
+            style={styles.backButton} 
+            onPress={() => navigation.navigate('Welcome')}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.backButtonText}>Voltar para o início</Text>
+          </TouchableOpacity>
+        </Animatable.View>
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -60,45 +86,49 @@ export default function CreateMessage() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#34465F',
-    justifyContent: 'center',
-    paddingHorizontal: 20,
+    backgroundColor: "#000",
   },
-  form: {
-    borderRadius: 20,
+  containerForm: {
+    flex: 1,
+    backgroundColor: "#34465F",
+    marginHorizontal: 20,
+    borderRadius: 25,
     padding: 20,
-    // fundo transparente, sem backgroundColor definido
+    justifyContent: "center",
   },
   label: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 18,
-    marginBottom: 10,
+    marginBottom: 12,
   },
   input: {
     height: 120,
-    backgroundColor: '#fff',
+    backgroundColor: '#f0f0f0',
     borderRadius: 10,
     padding: 10,
     textAlignVertical: 'top',
     fontSize: 16,
-    marginBottom: 20,
+    color: '#34465F',
   },
-  button: {
-    backgroundColor: '#439CAC',
-    paddingVertical: 12,
+  buttonPrimary: {
+    backgroundColor: "#fff",
     borderRadius: 50,
-    alignItems: 'center',
-    marginVertical: 8,
+    paddingVertical: 14,
+    marginTop: 20,
+    alignItems: "center",
   },
-  buttonText: {
-    color: '#fff',
+  buttonPrimaryText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
+    color: "#34465F",
   },
-  buttonBack: {
-    backgroundColor: '#439CAC',
+  backButton: {
+    marginTop: 20,
+    alignItems: "center",
   },
-  buttonBackText: {
-    color: '#eee',
+  backButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    textDecorationLine: "underline",
   },
 });

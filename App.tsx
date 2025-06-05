@@ -8,7 +8,7 @@ import RegisterDevice from './src/pages/RegisterDevice';
 import RegisteredDevice from './src/pages/RegisteredDevice';
 import Register from './src/pages/Register';
 import Messages from './src/pages/Messages';
-import CreateMessage from './src/pages/CreateMessage';  // importe a tela Messages
+import CreateMessage from './src/pages/CreateMessage';
 
 export type RootStackParamList = {
   Welcome: undefined;
@@ -17,7 +17,7 @@ export type RootStackParamList = {
   RegisteredDevice: undefined;
   Register: undefined;
   Messages: undefined;
-  CreateMessage: undefined
+  CreateMessage: undefined;
 };
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -32,8 +32,8 @@ export default function App() {
         <Stack.Screen name="RegisteredDevice" component={RegisteredDevice} />
         <Stack.Screen name="Register" component={Register} />
         <Stack.Screen name="Messages" component={Messages} />
-        <Stack.Screen name='CreateMessage'component={CreateMessage}/>
-    </Stack.Navigator>
+        <Stack.Screen name="CreateMessage" component={CreateMessage} />
+      </Stack.Navigator>
     </NavigationContainer>
   );
 }

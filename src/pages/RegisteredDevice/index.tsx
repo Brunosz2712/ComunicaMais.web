@@ -1,72 +1,115 @@
 import React, { useEffect, useState } from "react";
-import {
-  View, Text, StyleSheet, FlatList, TouchableOpacity, Alert
-} from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Animatable from "react-native-animatable";
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import * as Animatable from 'react-native-animatable';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { RootStackParamList } from '../../routes'; // ajuste conforme seu projeto
 
-export default function RegisteredDevice({ navigation }: any) {
-  const [devices, setDevices] = useState<any[]>([]);
+type NavigationPropType = NavigationProp<RootStackParamList, 'RegisteredDevice'>;
+
+type Device = {
+  id: number;
+  name: string;
+  serialNumber: string;
+  registeredAt: string;
+};
+
+export default function RegisteredDevice() {
+  const navigation = useNavigation<NavigationPropType>();
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const loadDevices = async () => {
-      const stored = await AsyncStorage.getItem("@devices");
-      if (stored) setDevices(JSON.parse(stored));
-    };
-    loadDevices();
+    fetch('http://<SEU_IP_LOCAL>:8080/api/devices')
+      .then(res => res.json())
+      .then(data => {
+        setDevices(data);
+        setLoading(false);
+      })
+      .catch(error => {
+        console.error(error);
+        setLoading(false);
+      });
   }, []);
+
+  const renderItem = ({ item }: { item: Device }) => (
+    <View style={styles.deviceBox}>
+      <Text style={styles.deviceName}>{item.name}</Text>
+      <Text style={styles.deviceInfo}>Série: {item.serialNumber}</Text>
+      <Text style={styles.deviceInfo}>Registrado em: {new Date(item.registeredAt).toLocaleDateString()}</Text>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      <Animatable.Text animation="fadeInDown" style={styles.title}>
-        Dispositivos Cadastrados
-      </Animatable.Text>
+      <Animatable.View animation="fadeInUp" style={styles.containerForm}>
+        <Text style={styles.title}>Dispositivos Cadastrados</Text>
 
-      <FlatList
-        data={devices}
-        keyExtractor={(_, index) => index.toString()}
-        renderItem={({ item }) => (
-          <View style={styles.deviceBox}>
-            <Text style={styles.deviceText}>{item.plate}</Text>
-          </View>
+        {loading ? (
+          <ActivityIndicator size="large" color="#fff" style={{ marginTop: 20 }} />
+        ) : (
+          <FlatList
+            data={devices}
+            keyExtractor={(item) => item.id.toString()}
+            renderItem={renderItem}
+            contentContainerStyle={{ paddingBottom: 20 }}
+            style={{ marginTop: 10 }}
+          />
         )}
-        ListEmptyComponent={<Text style={styles.emptyText}>Nenhum Dispositivo Cadastrado</Text>}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 30 }}
-      />
 
-      <TouchableOpacity
-        style={styles.buttonPrimary}
-        onPress={() => navigation.navigate("RegisterDevice")}
-      >
-        <Text style={styles.buttonPrimaryText}>Cadastrar novo Dispositivo</Text>
-      </TouchableOpacity>
-
-      <TouchableOpacity style={styles.buttonSecondary} onPress={() => navigation.navigate("Welcome")}>
-        <Text style={styles.buttonSecondaryText}>Voltar para início</Text>
-      </TouchableOpacity>
+        <TouchableOpacity 
+          style={styles.backButton} 
+          onPress={() => navigation.navigate('Welcome')}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.backButtonText}>Voltar para o início</Text>
+        </TouchableOpacity>
+      </Animatable.View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000", padding: 20 },
-  title: { color: "#fff", fontSize: 30, fontWeight: "bold", marginVertical: 20 },
-  deviceBox: {
+  container: {
+    flex: 1,
+    backgroundColor: "#000",
+    paddingHorizontal: 20,
+    paddingTop: 40,
+  },
+  containerForm: {
+    flex: 1,
     backgroundColor: "#34465F",
-    borderRadius: 8,
+    borderRadius: 25,
+    padding: 20,
+  },
+  title: {
+    fontSize: 24,
+    color: "#fff",
+    fontWeight: "bold",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  deviceBox: {
+    backgroundColor: "#486c8c",
+    borderRadius: 15,
     padding: 15,
-    marginBottom: 12
+    marginVertical: 6,
   },
-  deviceText: { color: "#fff", fontSize: 18 },
-  emptyText: { color: "#ccc", fontSize: 16, textAlign: "center", marginTop: 40 },
-  buttonPrimary: {
-    backgroundColor: "#fff",
-    borderRadius: 50,
-    paddingVertical: 12,
+  deviceName: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "600",
+  },
+  deviceInfo: {
+    color: "#ccc",
+    fontSize: 14,
+  },
+  backButton: {
     marginTop: 20,
-    alignItems: "center"
+    alignItems: "center",
   },
-  buttonPrimaryText: { color: "#34465F", fontSize: 18, fontWeight: "bold" },
-  buttonSecondary: { marginTop: 15, alignItems: "center" },
-  buttonSecondaryText: { color: "#439CAC", fontSize: 16, textDecorationLine: "underline" }
+  backButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    textDecorationLine: "underline",
+  },
 });
