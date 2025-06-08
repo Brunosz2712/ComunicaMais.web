@@ -1,41 +1,47 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, ScrollView } from "react-native";
+import React, { useContext, useEffect, useState } from 'react';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
 import * as Animatable from 'react-native-animatable';
-import { useNavigation, NavigationProp } from '@react-navigation/native';
-import { RootStackParamList } from '../../routes'; // ajuste o caminho conforme sua estrutura
+import { AuthContext } from '../../contexts/AuthContext';
+import { getMessages } from '../../services/api';
 
-type NavigationPropType = NavigationProp<RootStackParamList, 'Messages'>;
-
-type Message = {
-  id: number;
+type MessageDTO = {
+  idMessage: number;
   content: string;
-  senderId: number;
-  recipientId: number;
   messageType: string;
+  timestamp: string;
+  delivered: boolean;
 };
 
 export default function Messages() {
-  const navigation = useNavigation<NavigationPropType>();
-  const [messages, setMessages] = useState<Message[]>([]);
+  const { token, signOut } = useContext(AuthContext);
+  const [messages, setMessages] = useState<MessageDTO[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://<SEU_IP_LOCAL>:8080/api/messages')
-      .then(res => res.json())
-      .then(data => {
-        setMessages(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error(error);
-        setLoading(false);
-      });
-  }, []);
+    async function fetchMessages() {
+      if (token) {
+        try {
+          setLoading(true);
+          const response = await getMessages(token);
+          console.log('Mensagens:', response.data);
+          setMessages(response.data.content); // a API retorna Page<MessageDTO>
+        } catch (error) {
+          console.error('Erro ao buscar mensagens', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
 
-  const renderItem = ({ item }: { item: Message }) => (
+    fetchMessages();
+  }, [token]);
+
+  const renderItem = ({ item }: { item: MessageDTO }) => (
     <View style={styles.messageBox}>
       <Text style={styles.messageText}>{item.content}</Text>
       <Text style={styles.messageMeta}>Tipo: {item.messageType}</Text>
+      <Text style={styles.messageMeta}>Entregue: {item.delivered ? 'Sim' : 'Não'}</Text>
+      <Text style={styles.messageMeta}>Data: {new Date(item.timestamp).toLocaleString()}</Text>
     </View>
   );
 
@@ -49,19 +55,16 @@ export default function Messages() {
         ) : (
           <FlatList
             data={messages}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.idMessage.toString()}
             renderItem={renderItem}
             contentContainerStyle={{ paddingBottom: 20 }}
             style={{ marginTop: 10 }}
           />
         )}
 
-        <TouchableOpacity 
-          style={styles.backButton} 
-          onPress={() => navigation.navigate('Welcome')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.backButtonText}>Voltar para o início</Text>
+        {/* BOTÃO LOGOUT */}
+        <TouchableOpacity style={styles.logoutButton} onPress={signOut}>
+          <Text style={styles.logoutButtonText}>Sair</Text>
         </TouchableOpacity>
       </Animatable.View>
     </View>
@@ -71,46 +74,49 @@ export default function Messages() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#000",
+    backgroundColor: '#000',
     paddingHorizontal: 20,
     paddingTop: 40,
   },
   containerForm: {
     flex: 1,
-    backgroundColor: "#34465F",
+    backgroundColor: '#34465F',
     borderRadius: 25,
     padding: 20,
   },
   title: {
     fontSize: 24,
-    color: "#fff",
-    fontWeight: "bold",
-    textAlign: "center",
+    color: '#fff',
+    fontWeight: 'bold',
+    textAlign: 'center',
     marginBottom: 20,
   },
   messageBox: {
-    backgroundColor: "#486c8c",
+    backgroundColor: '#486c8c',
     borderRadius: 15,
     padding: 15,
     marginVertical: 6,
   },
   messageText: {
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
   },
   messageMeta: {
     marginTop: 6,
-    color: "#ccc",
+    color: '#ccc',
     fontSize: 12,
-    fontStyle: "italic",
+    fontStyle: 'italic',
   },
-  backButton: {
-    marginTop: 20,
-    alignItems: "center",
+  logoutButton: {
+    marginTop: 30,
+    backgroundColor: '#ff4d4d',
+    borderRadius: 50,
+    paddingVertical: 12,
+    alignItems: 'center',
   },
-  backButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    textDecorationLine: "underline",
+  logoutButtonText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold',
   },
 });

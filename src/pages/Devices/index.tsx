@@ -1,48 +1,55 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator } from "react-native";
+import React, { useEffect, useState, useContext } from 'react';
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, TouchableOpacity } from 'react-native';
 import * as Animatable from 'react-native-animatable';
 import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { RootStackParamList } from '../../routes'; // ajuste conforme seu projeto
+import { AuthContext } from '../../contexts/AuthContext';
+import { getDevices } from '../../services/api';
 
-type NavigationPropType = NavigationProp<RootStackParamList, 'RegisteredDevice'>;
+type NavigationPropType = NavigationProp<RootStackParamList, 'Devices'>;
 
-type Device = {
+type DeviceDTO = {
   id: number;
   name: string;
-  serialNumber: string;
-  registeredAt: string;
+  type: string;
 };
 
-export default function RegisteredDevice() {
+export default function Devices() {
   const navigation = useNavigation<NavigationPropType>();
-  const [devices, setDevices] = useState<Device[]>([]);
+  const { token } = useContext(AuthContext);
+  const [devices, setDevices] = useState<DeviceDTO[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('http://<SEU_IP_LOCAL>:8080/api/devices')
-      .then(res => res.json())
-      .then(data => {
-        setDevices(data);
-        setLoading(false);
-      })
-      .catch(error => {
-        console.error(error);
-        setLoading(false);
-      });
-  }, []);
+    async function fetchDevices() {
+      if (token) {
+        try {
+          setLoading(true);
+          const response = await getDevices(token);
+          console.log('Devices:', response.data);
+          setDevices(response.data); // a API retorna List<Device>
+        } catch (error) {
+          console.error('Erro ao buscar devices', error);
+        } finally {
+          setLoading(false);
+        }
+      }
+    }
 
-  const renderItem = ({ item }: { item: Device }) => (
+    fetchDevices();
+  }, [token]);
+
+  const renderItem = ({ item }: { item: DeviceDTO }) => (
     <View style={styles.deviceBox}>
       <Text style={styles.deviceName}>{item.name}</Text>
-      <Text style={styles.deviceInfo}>Série: {item.serialNumber}</Text>
-      <Text style={styles.deviceInfo}>Registrado em: {new Date(item.registeredAt).toLocaleDateString()}</Text>
+      <Text style={styles.deviceMeta}>Tipo: {item.type}</Text>
     </View>
   );
 
   return (
     <View style={styles.container}>
       <Animatable.View animation="fadeInUp" style={styles.containerForm}>
-        <Text style={styles.title}>Dispositivos Cadastrados</Text>
+        <Text style={styles.title}>Dispositivos</Text>
 
         {loading ? (
           <ActivityIndicator size="large" color="#fff" style={{ marginTop: 20 }} />
@@ -96,12 +103,13 @@ const styles = StyleSheet.create({
   },
   deviceName: {
     color: "#fff",
-    fontSize: 18,
-    fontWeight: "600",
+    fontSize: 16,
   },
-  deviceInfo: {
+  deviceMeta: {
+    marginTop: 6,
     color: "#ccc",
-    fontSize: 14,
+    fontSize: 12,
+    fontStyle: "italic",
   },
   backButton: {
     marginTop: 20,

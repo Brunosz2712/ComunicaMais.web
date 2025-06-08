@@ -1,32 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { 
   View, Text, StyleSheet, TextInput, TouchableOpacity, 
   Alert, KeyboardAvoidingView, Platform, ScrollView 
 } from "react-native";
 import * as Animatable from 'react-native-animatable';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { AuthContext } from '../../contexts/AuthContext';
 
 export default function SignIn({ navigation }: any) {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const { signIn } = useContext(AuthContext);
 
     const handleLogin = async () => {
-        try {
-            const storedUser = await AsyncStorage.getItem('@user_data');
-            if (!storedUser) {
-                Alert.alert('Erro', 'Nenhum usuário cadastrado!');
-                return;
-            }
-            const userData = JSON.parse(storedUser);
-            if (email === userData.email && password === userData.password) {
-                Alert.alert('Sucesso', 'Login realizado com sucesso!');
-                navigation.navigate('RegisterMotorcycle');
-            } else {
-                Alert.alert('Erro', 'E-mail ou senha inválidos!');
-            }
-        } catch (error) {
-            Alert.alert('Erro', 'Erro ao tentar fazer login.');
-            console.log(error);
+        const success = await signIn(email, password);
+        if (success) {
+            Alert.alert('Sucesso', 'Login realizado com sucesso!');
+            navigation.navigate('Messages'); // ou 'Devices', você escolhe
+        } else {
+            Alert.alert('Erro', 'E-mail ou senha inválidos!');
         }
     };
 

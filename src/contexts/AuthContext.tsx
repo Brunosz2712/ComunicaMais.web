@@ -1,23 +1,16 @@
 import React, { createContext, useState, ReactNode, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  deviceId: string;
-  role: string;
-}
+import { login } from '../services/api';
 
 interface AuthContextData {
-  user: User | null;
+  token: string | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextData>({
-  user: null,
+  token: null,
   loading: true,
   signIn: async () => false,
   signOut: async () => {},
@@ -28,51 +21,54 @@ interface Props {
 }
 
 export const AuthProvider: React.FC<Props> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Carrega usuário do AsyncStorage ao iniciar app
-    async function loadStorageData() {
+    async function loadStorageData(): Promise<void> {
       try {
-        const storedUser = await AsyncStorage.getItem('@ComunicaMais:user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
+        const storedToken = await AsyncStorage.getItem('@ComunicaMais:token');
+        if (storedToken) {
+          setToken(storedToken);
+          console.log('Token carregado do storage:', storedToken);
         }
       } catch (error) {
-        console.log('Erro ao carregar usuário:', error);
+        console.error('Erro ao carregar token do AsyncStorage:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     }
+
     loadStorageData();
   }, []);
 
   const signIn = async (email: string, password: string): Promise<boolean> => {
-    // Aqui você pode trocar para consumir API real de autenticação
-    // Por hora, vamos fazer mock para teste:
-    if (email && password) {
-      // Fake user data, substitua com fetch da API
-      const fakeUser = {
-        id: '1',
-        name: 'Alice',
-        email,
-        deviceId: 'device-alice-001',
-        role: 'USER',
-      };
-      await AsyncStorage.setItem('@ComunicaMais:user', JSON.stringify(fakeUser));
-      setUser(fakeUser);
+    try {
+      const response = await login(email, password);
+      const tokenResponse = response.data.token; // ou response.data.jwt, conforme sua API
+
+      await AsyncStorage.setItem('@ComunicaMais:token', tokenResponse);
+      setToken(tokenResponse);
+      console.log('Token recebido e salvo:', tokenResponse);
       return true;
+    } catch (error) {
+      console.error('Erro ao fazer login:', error);
+      return false;
     }
-    return false;
   };
 
   const signOut = async () => {
-    await AsyncStorage.removeItem('@ComunicaMais:user');
-    setUser(null);
+    try {
+      await AsyncStorage.removeItem('@ComunicaMais:token');
+      setToken(null);
+      console.log('Token removido, usuário deslogado.');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    }
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ token, loading, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

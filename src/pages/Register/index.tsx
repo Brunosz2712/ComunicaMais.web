@@ -1,9 +1,19 @@
-import React, { useState } from "react";
+// src/pages/Register/index.tsx
+
+import React, { useState } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, KeyboardAvoidingView, Platform, ScrollView
-} from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import * as Animatable from "react-native-animatable";
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+} from 'react-native';
+import * as Animatable from 'react-native-animatable';
+import { registerUser } from '../../services/api';
 
 export default function Register({ navigation }: any) {
   const [email, setEmail] = useState('');
@@ -11,23 +21,30 @@ export default function Register({ navigation }: any) {
 
   const handleRegister = async () => {
     if (!email || !password) {
-      Alert.alert("Erro", "Preencha todos os campos!");
+      Alert.alert('Erro', 'Preencha todos os campos!');
       return;
     }
 
     try {
-      await AsyncStorage.setItem("@user_data", JSON.stringify({ email, password }));
-      Alert.alert("Sucesso", "Cadastro realizado!");
-      navigation.navigate("SignIn");
+      const response = await registerUser(email, password);
+      console.log('Usuário cadastrado:', response.data);
+
+      Alert.alert('Sucesso', 'Cadastro realizado com sucesso!', [
+        {
+          text: 'OK',
+          onPress: () => navigation.navigate('Signin'),
+        },
+      ]);
     } catch (error) {
-      Alert.alert("Erro", "Erro ao cadastrar.");
+      console.error('Erro ao cadastrar usuário:', error);
+      Alert.alert('Erro', 'Erro ao cadastrar usuário.');
     }
   };
 
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
       <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
         <View style={styles.header}>
@@ -70,34 +87,34 @@ export default function Register({ navigation }: any) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#000" },
-  header: { marginTop: "38%", marginBottom: "8%", paddingStart: "5%" },
-  titleHeader: { fontSize: 40, fontWeight: "bold", color: "#fff" },
+  container: { flex: 1, backgroundColor: '#000' },
+  header: { marginTop: '38%', marginBottom: '8%', paddingStart: '5%' },
+  titleHeader: { fontSize: 40, fontWeight: 'bold', color: '#fff' },
   form: {
     flex: 1,
-    backgroundColor: "#34465F",
+    backgroundColor: '#34465F',
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
-    paddingHorizontal: "5%",
-    paddingVertical: 20
+    paddingHorizontal: '5%',
+    paddingVertical: 20,
   },
-  label: { color: "#fff", fontSize: 20, marginTop: 28 },
+  label: { color: '#fff', fontSize: 20, marginTop: 28 },
   input: {
     borderBottomWidth: 1,
-    borderBottomColor: "#ccc",
+    borderBottomColor: '#ccc',
     height: 40,
-    color: "#fff",
+    color: '#fff',
     fontSize: 16,
-    marginBottom: 12
+    marginBottom: 12,
   },
   buttonPrimary: {
-    backgroundColor: "#fff",
+    backgroundColor: '#fff',
     borderRadius: 50,
     paddingVertical: 12,
     marginTop: 20,
-    alignItems: "center"
+    alignItems: 'center',
   },
-  buttonPrimaryText: { color: "#34465F", fontSize: 18, fontWeight: "bold" },
-  buttonSecondary: { marginTop: 20, alignItems: "center" },
-  buttonSecondaryText: { color: "#439CAC", fontSize: 16, textDecorationLine: "underline" }
+  buttonPrimaryText: { color: '#34465F', fontSize: 18, fontWeight: 'bold' },
+  buttonSecondary: { marginTop: 20, alignItems: 'center' },
+  buttonSecondaryText: { color: '#439CAC', fontSize: 16, textDecorationLine: 'underline' },
 });
